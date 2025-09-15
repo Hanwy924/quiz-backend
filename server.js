@@ -1,52 +1,67 @@
 const express = require("express");
+const bodyParser = require("body-parser");
 const fs = require("fs");
 const cors = require("cors");
+
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware
+app.use(bodyParser.json());
 app.use(cors());
-app.use(express.json());
 
-const RESULTS_FILE = "results.json";
+// Path to store answers
+const ANSWERS_FILE = "./answers.json";
 
-// Load existing results
-function loadResults() {
-  if (!fs.existsSync(RESULTS_FILE)) return [];
-  return JSON.parse(fs.readFileSync(RESULTS_FILE));
+// Helper to read answers
+function readAnswers() {
+  if (!fs.existsSync(ANSWERS_FILE)) return [];
+  const data = fs.readFileSync(ANSWERS_FILE);
+  return JSON.parse(data);
 }
 
-// Save results
-function saveResults(results) {
-  fs.writeFileSync(RESULTS_FILE, JSON.stringify(results, null, 2));
+// Helper to write answers
+function writeAnswers(answers) {
+  fs.writeFileSync(ANSWERS_FILE, JSON.stringify(answers, null, 2));
 }
 
-// ✅ Submit answers
+// Route to submit answer
 app.post("/submit", (req, res) => {
-  const { ks, house, answers } = req.body;
-  if (!ks || !house || !answers) {
-    return res.status(400).json({ error: "Missing fields" });
+  const { questionNumber, answer, ks } = req.body;
+
+  if (!questionNumber || !answer || !ks) {
+    return res.status(400).json({ message: "Missing data" });
   }
 
-  const score = answers.filter(a => typeof a === "number").length;
-  const newResult = {
-    ks,
-    house,
-    answers,
-    score,
-    time: new Date().toLocaleString()
-  };
+  const answers = readAnswers();
+  answers.push({ questionNumber, answer, ks, timestamp: new Date() });
+  writeAnswers(answers);
 
-  const results = loadResults();
-  results.push(newResult);
-  saveResults(results);
-
-  res.json({ success: true });
+  res.json({ message: "Answer submitted successfully" });
 });
 
-// ✅ Get results (for admin)
-app.get("/results", (req, res) => {
-  const results = loadResults();
-  res.json(results);
+// Route to get all answers (admin only)
+app.get("/answers", (req, res) => {
+  const answers = readAnswers();
+  res.json(answers);
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Route to delete an answer by index
+app.delete("/delete/:index", (req, res) => {
+  const index = parseInt(req.params.index);
+  let answers = readAnswers();
+
+  if (index < 0 || index >= answers.length) {
+    return res.status(400).json({ message: "Invalid index" });
+  }
+
+  answers.splice(index, 1); // remove answer
+  writeAnswers(answers);
+
+  res.json({ message: "Answer deleted successfully" });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
