@@ -27,14 +27,21 @@ function writeAnswers(answers) {
 
 // Route to submit answer
 app.post("/submit", (req, res) => {
-  const { questionNumber, answer, ks } = req.body;
+  const { questionNumber, answer, ks, name, house } = req.body;
 
-  if (!questionNumber || !answer || !ks) {
+  if (!questionNumber || !answer || !ks || !name || !house) {
     return res.status(400).json({ message: "Missing data" });
   }
 
   const answers = readAnswers();
-  answers.push({ questionNumber, answer, ks, timestamp: new Date() });
+  answers.push({
+    name,
+    house,
+    questionNumber,
+    answer,
+    ks,
+    timestamp: new Date(),
+  });
   writeAnswers(answers);
 
   res.json({ message: "Answer submitted successfully" });
