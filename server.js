@@ -1,69 +1,79 @@
 const express = require("express");
 const bodyParser = require("body-parser");
-const fs = require("fs");
+const fetch = require("node-fetch");
 const cors = require("cors");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(bodyParser.json());
 app.use(cors());
 
-// Path to store answers
-const ANSWERS_FILE = "./answers.json";
+// JSONBin Setup
+const BIN_URL = "https://api.jsonbin.io/v3/b/690b17b443b1c97be99a151a";
+const API_KEY = "$2a$10$8pepyAuO22OWzCu2zyFNp./KrHVUnYFw.QptMKs/gHJjP6veGHxVa";
 
-// Helper to read answers
-function readAnswers() {
-  if (!fs.existsSync(ANSWERS_FILE)) return [];
-  const data = fs.readFileSync(ANSWERS_FILE);
-  return JSON.parse(data);
+// Read answers
+async function readAnswers() {
+  const res = await fetch(BIN_URL, {
+    method: "GET",
+    headers: { "X-Master-Key": API_KEY }
+  });
+  const data = await res.json();
+  return data.record.answers;
 }
 
-// Helper to write answers
-function writeAnswers(answers) {
-  fs.writeFileSync(ANSWERS_FILE, JSON.stringify(answers, null, 2));
+// Write answers
+async function writeAnswers(answers) {
+  await fetch(BIN_URL, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Master-Key": API_KEY
+    },
+    body: JSON.stringify({ answers })
+  });
 }
 
-// Route to submit answer
-app.post("/submit", (req, res) => {
+// Submit Answer
+app.post("/submit", async (req, res) => {
   const { questionNumber, answer, ks, name, house } = req.body;
 
   if (!questionNumber || !answer || !ks || !name || !house) {
     return res.status(400).json({ message: "Missing data" });
   }
 
-  const answers = readAnswers();
+  const answers = await readAnswers();
   answers.push({
     name,
     house,
     questionNumber,
     answer,
     ks,
-    timestamp: new Date(),
+    timestamp: new Date()
   });
-  writeAnswers(answers);
 
+  await writeAnswers(answers);
   res.json({ message: "Answer submitted successfully" });
 });
 
-// Route to get all answers (admin only)
-app.get("/answers", (req, res) => {
-  const answers = readAnswers();
+// Get all answers (admin)
+app.get("/answers", async (req, res) => {
+  const answers = await readAnswers();
   res.json(answers);
 });
 
-// Route to delete an answer by index
-app.delete("/delete/:index", (req, res) => {
+// Delete answer by index
+app.delete("/delete/:index", async (req, res) => {
   const index = parseInt(req.params.index);
-  let answers = readAnswers();
+  const answers = await readAnswers();
 
   if (index < 0 || index >= answers.length) {
     return res.status(400).json({ message: "Invalid index" });
   }
 
-  answers.splice(index, 1); // remove answer
-  writeAnswers(answers);
+  answers.splice(index, 1);
+  await writeAnswers(answers);
 
   res.json({ message: "Answer deleted successfully" });
 });
