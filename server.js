@@ -6,15 +6,12 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(bodyParser.json());
 app.use(cors());
 
-// JSONBin Setup
 const BIN_URL = "https://api.jsonbin.io/v3/b/690b17b443b1c97be99a151a";
 const API_KEY = "$2a$10$8pepyAuO22OWzCu2zyFNp./KrHVUnYFw.QptMKs/gHJjP6veGHxVa";
 
-// Read answers from JSONBin
 async function readAnswers() {
   const res = await fetch(BIN_URL, {
     method: "GET",
@@ -24,7 +21,6 @@ async function readAnswers() {
   return data.record.answers;
 }
 
-// Write answers to JSONBin
 async function writeAnswers(answers) {
   await fetch(BIN_URL, {
     method: "PUT",
@@ -36,7 +32,6 @@ async function writeAnswers(answers) {
   });
 }
 
-// Submit Answer
 app.post("/submit", async (req, res) => {
   const { questionNumber, answer, ks, name, house } = req.body;
 
@@ -58,13 +53,11 @@ app.post("/submit", async (req, res) => {
   res.json({ message: "Answer submitted successfully" });
 });
 
-// Get all answers (admin)
 app.get("/answers", async (req, res) => {
   const answers = await readAnswers();
   res.json(answers);
 });
 
-// Delete answer by index
 app.delete("/delete/:index", async (req, res) => {
   const index = parseInt(req.params.index);
   const answers = await readAnswers();
@@ -79,7 +72,6 @@ app.delete("/delete/:index", async (req, res) => {
   res.json({ message: "Answer deleted successfully" });
 });
 
-// Start server
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
