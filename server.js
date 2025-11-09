@@ -6,6 +6,7 @@ const cors = require("cors");
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Middleware
 app.use(bodyParser.json());
 app.use(cors());
 
@@ -13,7 +14,7 @@ app.use(cors());
 const BIN_URL = "https://api.jsonbin.io/v3/b/690b17b443b1c97be99a151a";
 const API_KEY = "$2a$10$8pepyAuO22OWzCu2zyFNp./KrHVUnYFw.QptMKs/gHJjP6veGHxVa";
 
-// Read answers
+// Read answers from JSONBin
 async function readAnswers() {
   const res = await fetch(BIN_URL, {
     method: "GET",
@@ -23,7 +24,7 @@ async function readAnswers() {
   return data.record.answers;
 }
 
-// Write answers
+// Write answers to JSONBin
 async function writeAnswers(answers) {
   await fetch(BIN_URL, {
     method: "PUT",
